@@ -34,3 +34,17 @@ test('OAuth localhost cookies, callback, state replay and server-side owner perm
  assert.equal(oauthStatus({...e,NODE_ENV:'production'}).ready,false);
  const secure=await authRoutes(new Request('https://league.example/api/auth/discord'),{...e,NODE_ENV:'production',NEXUS_SITE_URL:'https://league.example'});assert.ok(secure.headers.get('set-cookie').includes('__Host-nexus_oauth='));assert.ok(secure.headers.get('set-cookie').includes('Secure'));
 });
+
+test('verified non-admin members cannot create teams or enroll them',async()=>{
+ const e=env();e.NEXUS_LOCAL_ADMIN='false';e.DISCORD_GUILD_ID='444444444444444444';e.DISCORD_OWNER_ID='333333333333333333';
+ e.DB.sqlite.prepare("INSERT INTO users(id,discord_id,nick,mamo,owner,created) VALUES('member','222222222222222222','Member','',0,'2026')").run();
+ const token='b'.repeat(64);e.DB.sqlite.prepare('INSERT INTO web_sessions(hash,user_id,access_cipher,expires,verified_at,verified_guild,roles,created) VALUES(?,?,?,?,?,?,?,?)').run(await hash(token),'member',await encrypt('provider',e),Date.now()+3600000,Date.now(),e.DISCORD_GUILD_ID,'[]','2026');
+ const original=globalThis.fetch;globalThis.fetch=async()=>Response.json({roles:[]});
+ try{for(const op of ['team.create','entry.create']){const response=await handle(req('/api/action',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Nexus-Request':'1',Cookie:'nexus_session='+token},body:JSON.stringify({op,data:{}})}),e);assert.equal(response.status,403,await response.text());}assert.equal(e.DB.sqlite.prepare('SELECT count(*) n FROM teams').get().n,0);}finally{globalThis.fetch=original}
+});
+test('unconfigured production permits only read-only browsing and reports unavailable storage',async()=>{
+ const e={NODE_ENV:'production',NEXUS_SITE_URL:'https://mes.example'};
+ const r=await handle(req(),e);assert.equal(r.status,200);const state=await r.json();assert.equal(state.config.storageReady,false);assert.equal(state.config.oauth.ready,false);assert.equal(state.permissions.admin,false);assert.deepEqual(state.teams,[]);
+ assert.equal((await handle(req('/api/action',{method:'POST'}),e)).status,503);
+ assert.equal((await handle(req('/api/health'),e)).status,503);
+});

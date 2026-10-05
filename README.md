@@ -1,4 +1,4 @@
-# NEXUS — Mamoball League
+# MES — Mamoball European Series
 
 Website-first league platform: competitions (league, knockout, groups/playoffs, Swiss), teams, player profiles, link requests, results, automatic graphics and Hall of Fame. Standard Next.js + React, SQLite locally, Turso/libSQL for Vercel. Discord OAuth2 is implemented; the bot is a later phase.
 
@@ -28,3 +28,7 @@ Read [SETUP.md](SETUP.md) for Discord login, GitHub and Vercel deployment.
 ## Current limits
 
 Real Discord authorization requires your application credentials. Provider tests use simulated Discord responses. Local admin is disabled in production and on Vercel. The remote database starts empty; data from the previous preview is not imported. The UI remains Portuguese. No bot deployment is included in this website package.
+
+## Online deployment
+
+Team creation and competition entries are admin-only. Public registration is disabled in both the UI and API. Without a configured production database, the website opens in a clearly labelled read-only preparation mode; login and all mutations remain disabled. Configure Turso and Discord credentials to activate the league.

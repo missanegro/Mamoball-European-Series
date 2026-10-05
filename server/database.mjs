@@ -8,4 +8,4 @@ export function database(env=process.env){
  return {client,prepare,async batch(statements){return (await client.batch(statements.map(({sql,args})=>({sql,args})),'write')).map(convert)}};
 }
 let db;
-export function runtime(){db ||= database();return {...process.env,DB:db};}
+export function runtime(){if((process.env.VERCEL||process.env.NODE_ENV==='production')&&!process.env.TURSO_DATABASE_URL)return {...process.env,DB:undefined};db ||= database();return {...process.env,DB:db};}
