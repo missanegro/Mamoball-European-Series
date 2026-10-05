@@ -1,0 +1,24 @@
+export const FORMATS=['Liga','Eliminação direta','Grupos + playoffs','Sistema suíço'];
+export function roundRobin(ids,group=''){
+ const ring=[...ids];if(ring.length%2)ring.push(null);const result=[];
+ for(let r=1;r<ring.length;r++){
+  for(let j=0;j<ring.length/2;j++){let a=ring[j],b=ring[ring.length-1-j];if(a!==null&&b!==null){if(r%2===0)[a,b]=[b,a];result.push({home:a,away:b,round:r,stage:group?'groups':'league',group})}}
+  ring.splice(1,0,ring.pop());
+ }return result;
+}
+export function standings(ids,matches){const rows=new Map(ids.map(id=>[id,{id,played:0,wins:0,draws:0,losses:0,gf:0,ga:0,gd:0,points:0,buchholz:0,form:[]}]));
+ for(const m of matches){if(m.home_score===null||m.home_score===undefined)continue;const a=rows.get(m.home_id),b=rows.get(m.away_id);if(!a||!b)continue;for(const [t,sc,opp] of [[a,m.home_score,m.away_score],[b,m.away_score,m.home_score]]){t.played++;t.gf+=sc;t.ga+=opp;t.gd=t.gf-t.ga;const v=sc>opp?'V':sc===opp?'E':'D';t.form.push(v);t.form=t.form.slice(-5);if(v==='V'){t.wins++;t.points+=3}else if(v==='E'){t.draws++;t.points++}else t.losses++}}
+ for(const m of matches){if(m.home_score===null||m.home_score===undefined)continue;const a=rows.get(m.home_id),b=rows.get(m.away_id);if(a&&b){a.buchholz+=b.points;b.buchholz+=a.points}}
+ return [...rows.values()].sort((a,b)=>b.points-a.points||b.gd-a.gd||b.gf-a.gf||a.id-b.id);
+}
+export function swiss(ids,matches,round){let ranked=standings(ids,matches).sort((a,b)=>b.points-a.points||b.buchholz-a.buchholz||b.gd-a.gd||b.gf-a.gf||a.id-b.id).map(t=>t.id);const played=new Set(matches.map(m=>[m.home_id,m.away_id].sort((a,b)=>a-b).join(':')));let budget=100000;
+ function pair(rest){if(!rest.length)return [];if(--budget<0)return null;const a=rest[0];for(let j=1;j<rest.length;j++){const b=rest[j];if(played.has([a,b].sort((a,b)=>a-b).join(':')))continue;const tail=pair(rest.slice(1).filter(x=>x!==b));if(tail)return [[a,b],...tail]}return null}
+ const pairs=pair(ranked);if(!pairs)throw new Error('Não foi possível emparelhar sem repetir adversários. É necessária revisão do formato.');return pairs.map(([home,away])=>({home,away,round,stage:'swiss',group:''}));
+}
+export function initialFixtures(format,ids){if(ids.length<2||ids.length>32)throw new Error('São necessárias entre 2 e 32 equipas.');if(format==='Liga')return roundRobin(ids);if(format==='Sistema suíço'){if(ids.length%2)throw new Error('O formato suíço exige um número par de equipas nesta versão.');return swiss(ids,[],1)}if(ids.length<4||(ids.length&(ids.length-1))!==0)throw new Error('Usa 4, 8, 16 ou 32 equipas neste formato.');if(format==='Eliminação direta')return ids.slice(0,ids.length/2).map((home,i)=>({home,away:ids[ids.length-1-i],round:1,stage:'knockout',group:''}));if(format==='Grupos + playoffs'){if(ids.length<8)throw new Error('Grupos + playoffs exige pelo menos 8 equipas.');return Array.from({length:ids.length/4},(_,g)=>roundRobin(ids.slice(g*4,g*4+4),String.fromCharCode(65+g))).flat()}throw new Error('Formato inválido.')}
+export function nextFixtures(comp,entries,matches){const ids=entries.map(e=>e.team_id);if(!matches.length||matches.some(m=>m.home_score===null))throw new Error('Regista todos os resultados antes de avançar.');const round=Math.max(...matches.map(m=>m.round));if(comp.format==='Liga')return [];
+ if(comp.format==='Sistema suíço'){if(round>=comp.rounds)return [];return swiss(ids,matches,round+1)}
+ const knockouts=matches.filter(m=>m.stage==='knockout');if(knockouts.length){const latest=knockouts.filter(m=>m.round===Math.max(...knockouts.map(m=>m.round))).sort((a,b)=>a.slot-b.slot);if(latest.some(m=>!m.winner_id))throw new Error('Define o vencedor dos jogos a eliminar.');if(latest.length===1)return [];const winners=latest.map(m=>m.winner_id);return winners.filter((_,i)=>i%2===0).map((home,i)=>({home,away:winners[i*2+1],round:latest[0].round+1,stage:'knockout',group:''}))}
+ const groups=[...new Set(entries.map(e=>e.group_name))].sort();const qualifiers=groups.map(g=>standings(entries.filter(e=>e.group_name===g).map(e=>e.team_id),matches.filter(m=>m.group_name===g)).slice(0,2).map(x=>x.id));const pairs=[];for(let i=0;i<qualifiers.length;i+=2)pairs.push([qualifiers[i][0],qualifiers[i+1][1]],[qualifiers[i+1][0],qualifiers[i][1]]);return pairs.map(([home,away])=>({home,away,round:1,stage:'knockout',group:''}));
+}
+export function champion(comp,entries,matches){if(!matches.length||matches.some(m=>m.home_score===null))return null;if(comp.format==='Liga')return standings(entries.map(e=>e.team_id),matches)[0]?.id;if(comp.format==='Sistema suíço'){if(Math.max(...matches.map(m=>m.round))<comp.rounds)return null;return standings(entries.map(e=>e.team_id),matches).sort((a,b)=>b.points-a.points||b.buchholz-a.buchholz||b.gd-a.gd||b.gf-a.gf||a.id-b.id)[0]?.id}const ko=matches.filter(m=>m.stage==='knockout');if(!ko.length)return null;const last=ko.filter(m=>m.round===Math.max(...ko.map(m=>m.round)));return last.length===1?last[0].winner_id:null}
