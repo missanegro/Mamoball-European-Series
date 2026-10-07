@@ -11,17 +11,23 @@ const one=async(db,sql,...args)=>db.prepare(sql).bind(...args).first();
 const run=async(db,sql,...args)=>db.prepare(sql).bind(...args).run();
 // Mamoball IDs: exactly 6 letters/digits. First ID is set by the player; later changes go through an admin request, one per 24 hours.
 export const MAMO_ID=/^[A-Za-z0-9]{6}$/;
-export const ID_COOLDOWN=24*3600*1000;
+export const ID_COOLDOWN=48*3600*1000;
+export const NICK_COOLDOWN=48*3600*1000;
+export const FLAG_COOLDOWN=48*3600*1000;
+export const FLAG_CODE=/^[A-Z]{2}$/;
 const mamoId=v=>{const s=typeof v==='string'?v.trim():'';if(!MAMO_ID.test(s))fail('O ID Mamoball tem de ter 6 caracteres (letras e números).');return s};
 export const BANNERS=['lime','pitch','violet','ember','ocean','night'];
-const MEDIA={avatar:{max:200000},banner:{max:600000}};
+const MEDIA={avatar:{max:200000},banner:{max:600000},ingame:{max:1000000}};
 const MIME={'image/webp':[[0x52,0x49,0x46,0x46]],'image/jpeg':[[0xff,0xd8,0xff]],'image/png':[[0x89,0x50,0x4e,0x47]]};
 function decodeImage(dataUrl,kind){const m=typeof dataUrl==='string'&&dataUrl.match(/^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/);if(!m)fail('Imagem inválida. Usa PNG, JPG ou WEBP.');const bytes=Buffer.from(m[2],'base64');if(!bytes.length||bytes.length>MEDIA[kind].max)fail('Imagem demasiado grande.',413);if(!MIME[m[1]].some(sig=>sig.every((b,i)=>bytes[i]===b)))fail('Imagem inválida. Usa PNG, JPG ou WEBP.');return {mime:m[1],data:m[2]}}
 export function avatarUrl(u){if(!u)return null;if(u.avatar_kind==='upload'&&u.media_version>0)return `/api/media/${u.id}/avatar?v=${u.media_version}`;if(u.avatar_kind==='discord'&&u.discord_avatar&&u.discord_id)return `https://cdn.discordapp.com/avatars/${u.discord_id}/${u.discord_avatar}.${String(u.discord_avatar).startsWith('a_')?'gif':'png'}?size=256`;return null}
 export function bannerOf(u){if(!u)return {preset:'lime'};if(u.banner_kind==='upload'&&u.media_version>0)return {url:`/api/media/${u.id}/banner?v=${u.media_version}`};if(u.banner_kind==='discord'&&u.discord_banner&&u.discord_id)return {url:`https://cdn.discordapp.com/banners/${u.discord_id}/${u.discord_banner}.${String(u.discord_banner).startsWith('a_')?'gif':'png'}?size=1024`};return {preset:BANNERS.includes(u.banner_preset)?u.banner_preset:'lime'}}
 function ticketUrl(env){if(env.DISCORD_TICKET_URL&&/^https:\/\/(discord\.com|discord\.gg|ptb\.discord\.com)\//.test(env.DISCORD_TICKET_URL))return env.DISCORD_TICKET_URL;if(/^\d{16,22}$/.test(env.DISCORD_GUILD_ID||''))return 'https://discord.com/channels/'+env.DISCORD_GUILD_ID+(/^\d{16,22}$/.test(env.DISCORD_TICKET_CHANNEL_ID||'')?'/'+env.DISCORD_TICKET_CHANNEL_ID:'');return null}
 const signedIn=actor=>{if(!actor.admin&&!actor.user.discord_id)fail('Entra com Discord para completar o perfil.',403)};
-function nextIdChange(u){const last=Math.max(Date.parse(u.mamo_set_at||'')||0,Date.parse(u.mamo_request_at||'')||0);return last?new Date(last+ID_COOLDOWN).toISOString():null}
+const flagCode=v=>{const s=typeof v==='string'?v.trim().toUpperCase():'';if(!FLAG_CODE.test(s))fail('Escolhe um país válido.');return s};
+function nextNickChange(u){const last=Date.parse(u?.nick_changed_at||'')||0;return last?new Date(last+NICK_COOLDOWN).toISOString():null}
+function nextIdChange(u){const last=Math.max(Date.parse(u?.mamo_set_at||'')||0,Date.parse(u?.mamo_request_at||'')||0);return last?new Date(last+ID_COOLDOWN).toISOString():null}
+function nextFlagChange(u){const last=Math.max(Date.parse(u?.flag_set_at||'')||0,Date.parse(u?.flag_request_at||'')||0);return last?new Date(last+FLAG_COOLDOWN).toISOString():null}
 function waitText(ms){const t=Math.ceil(ms/60000),h=Math.floor(t/60),m=t%60;return h?`${h}h ${m}min`:`${m}min`}
 const sha=async(s)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 const json=(obj,status=200)=>Response.json(obj,{status,headers:{'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
