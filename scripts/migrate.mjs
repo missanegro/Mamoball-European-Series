@@ -8,7 +8,7 @@ export async function migrate(){
  try{
  for(const name of (await readdir('drizzle')).filter(n=>n.endsWith('.sql')).sort()){
  if((await tx.execute({sql:'SELECT name FROM nexus_migrations WHERE name=?',args:[name]})).rows.length)continue;
- for(const sql of (await readFile('drizzle/'+name,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean))await tx.execute(sql);
+ for(const sql of (await readFile('drizzle/'+name,'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean)){try{await tx.execute(sql)}catch(error){const msg=String(error?.message||'');if(/duplicate column name|already exists/i.test(msg)){console.log('Skipping already-applied migration statement',name);continue}throw error}}
  await tx.execute({sql:'INSERT INTO nexus_migrations VALUES (?,?)',args:[name,new Date().toISOString()]});
  console.log('Applied',name);
  }
