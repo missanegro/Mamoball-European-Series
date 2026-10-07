@@ -35,3 +35,24 @@ Add the credentials above and redeploy. The owner ID belongs to a person, not to
 ## Verify
 
 Open `/api/health` after provisioning the schema. It should report `ok: true`. Then test Discord login and admin actions. Until storage and login are configured, a successful Vercel build does not mean the league is operational.
+
+## Auto-join the MES Discord server
+
+On login the site asks for `guilds.join` and adds the player to the home server automatically.
+
+1. Discord Developer Portal → MES app → **Bot** → Reset Token → copy it.
+2. Invite the bot to the home server with this URL (permission: Create Invite):
+   `https://discord.com/oauth2/authorize?client_id=1557374299877277767&scope=bot&permissions=1`
+3. Discord → User Settings → Advanced → Developer Mode on → right-click the server → Copy Server ID.
+4. Vercel → Settings → Environment Variables (Production):
+   - `DISCORD_BOT_TOKEN` = the bot token
+   - `DISCORD_GUILD_ID` = the server ID
+5. Redeploy.
+
+Without both variables, login works as before (no auto-join).
+
+## Languages
+
+English by default. The globe button in the top bar switches to Português, Español, Français,
+Italiano, Русский, Українська or Türkçe (saved in the browser; `?lang=fr` also works).
+Translations live in `public/i18n/<code>.json` (key = Portuguese source text).

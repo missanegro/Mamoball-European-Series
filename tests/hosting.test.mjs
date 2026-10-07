@@ -48,3 +48,21 @@ test('unconfigured production permits only read-only browsing and reports unavai
  assert.equal((await handle(req('/api/action',{method:'POST'}),e)).status,503);
  assert.equal((await handle(req('/api/health'),e)).status,503);
 });
+test('login with bot token auto-joins the MES home server, and a blocked join stops login',async()=>{
+ const e=env();e.NEXUS_LOCAL_ADMIN='false';e.DISCORD_GUILD_ID='444444444444444444';e.DISCORD_BOT_TOKEN='bot-secret';
+ assert.deepEqual(oauthStatus(e).scopes,['identify','guilds.join','guilds.members.read']);
+ for(const [joinStatus,expected] of [[201,'/?auth=discord#profile'],[204,'/?auth=discord#profile'],[403,'auth_error=join_blocked']]){
+  const start=await authRoutes(req('/api/auth/discord'),e);const cookie=start.headers.get('set-cookie').split(';')[0];const target=new URL(start.headers.get('location'));
+  assert.ok(target.searchParams.get('scope').includes('guilds.join'));
+  const calls=[];
+  const provider=async(url,opts={})=>{calls.push([url,opts.method||'GET',opts.headers?.Authorization]);
+   if(url.includes('/token'))return Response.json({access_token:'acc',token_type:'Bearer',expires_in:3600,scope:'identify guilds.join guilds.members.read'});
+   if(opts.method==='PUT')return new Response(joinStatus===201?'{}':null,{status:joinStatus});
+   if(url.endsWith('/member'))return Response.json({roles:[]});
+   return Response.json({id:'555555555555555555',username:'Joiner'})};
+  const done=await authRoutes(req('/api/auth/discord/callback?code=c&state='+target.searchParams.get('state'),{headers:{Cookie:cookie}}),e,provider);
+  assert.ok(done.headers.get('location').includes(expected),done.headers.get('location'));
+  const put=calls.find(c=>c[1]==='PUT');assert.ok(put[0].endsWith('/guilds/444444444444444444/members/555555555555555555'));assert.equal(put[2],'Bot bot-secret');
+ }
+ assert.deepEqual(oauthStatus({...e,DISCORD_BOT_TOKEN:''}).scopes,['identify','guilds.members.read']);
+});

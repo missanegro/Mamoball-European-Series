@@ -1,3 +1,3 @@
 import type {Metadata} from 'next';
-export const metadata:Metadata={title:'MES — Mamoball European Series',description:'MES — The Future of Mamoball. Uma plataforma para ligar as ligas europeias, os clubes e os jogadores e preservar a história das competições.'};
-export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="pt"><head><link rel="stylesheet" href="/style.css?v=2"/></head><body>{children}</body></html>}
+export const metadata:Metadata={title:'MES — Mamoball European Series',description:'MES — The Future of Mamoball. A platform connecting European Mamoball leagues, clubs and players, and preserving competition history.'};
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><head><link rel="stylesheet" href="/style.css?v=3"/></head><body>{children}</body></html>}
