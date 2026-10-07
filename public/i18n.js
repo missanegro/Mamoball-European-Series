@@ -77,5 +77,5 @@
     switcher();
   });
   function start(){pass();observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:ATTRS})}
-  window.MES_I18N={lang:lang,languages:LANGS,ready:(lang===SOURCE?Promise.resolve():fetch('/i18n/'+lang+'.json?v=1').then(function(r){return r.ok?r.json():{}}).then(load).catch(function(){})).then(start)};
+  window.MES_I18N={lang:lang,languages:LANGS,ready:(lang===SOURCE?Promise.resolve():fetch('/i18n/'+lang+'.json?v=2').then(function(r){return r.ok?r.json():{}}).then(load).catch(function(){})).then(start)};
 })();

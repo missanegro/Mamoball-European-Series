@@ -56,3 +56,15 @@ Without both variables, login works as before (no auto-join).
 English by default. The globe button in the top bar switches to Português, Español, Français,
 Italiano, Русский, Українська or Türkçe (saved in the browser; `?lang=fr` also works).
 Translations live in `public/i18n/<code>.json` (key = Portuguese source text).
+
+## Ticket button (Mamoball ID help)
+
+The "Open a ticket on Discord" button links to `DISCORD_TICKET_URL` if set (e.g. your ticket channel link
+`https://discord.com/channels/<server id>/<channel id>`). Otherwise it uses `DISCORD_GUILD_ID`
+(+ `DISCORD_TICKET_CHANNEL_ID` if set). With none of these, the button is shown disabled.
+
+## Mamoball ID and profile images
+
+- Mamoball ID: 6 letters/digits, unique per account. The player sets it once; changes are requests
+  approved in Admin → "ID change requests", limited to one per 24 hours (counted from the first save and from each request).
+- Avatars and banners: Discord picture, uploaded image (stored in Turso, resized in the browser to 256×256 / 1500×500), or MES presets.
