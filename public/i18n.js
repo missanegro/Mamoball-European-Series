@@ -64,7 +64,7 @@
     wrap.innerHTML='<svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20M2 12h20M12 2c3 3 4 6.5 4 10s-1 7-4 10M12 2c-3 3-4 6.5-4 10s1 7 4 10"/></svg><span class="lang-code">'+lang.toUpperCase()+'</span><svg class="icon caret" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>';
     var sel=document.createElement('select'); sel.id='lang-switch'; sel.setAttribute('aria-label','Language');
     LANGS.forEach(function(l){var o=document.createElement('option');o.value=l[0];o.textContent=l[1];if(l[0]===lang)o.selected=true;sel.appendChild(o)});
-    sel.addEventListener('change',function(){try{localStorage.setItem(KEY,sel.value)}catch(e){}var u=new URL(location.href);u.searchParams.delete('lang');location.replace(u.toString())});
+    sel.addEventListener('change',function(){try{localStorage.setItem(KEY,sel.value)}catch(e){}var u=new URL(location.href);if(u.searchParams.has('lang')){u.searchParams.delete('lang');location.replace(u.toString())}else location.reload()});
     wrap.appendChild(sel); bar.insertBefore(wrap,bar.firstChild.nextSibling);
   }
   function pass(){translateNode(document.body);switcher();if(lang!==SOURCE)document.title=tr(document.title)}
