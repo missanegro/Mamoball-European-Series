@@ -14,26 +14,26 @@ async function member(e,id='member',discord='222222222222222222'){
 const call=async(e,op,data,token)=>{const headers={Origin:origin,'Content-Type':'application/json','X-Nexus-Request':'1'};if(token)headers.Cookie='nexus_session='+token;const r=await handle(new Request(origin+'/api/action',{method:'POST',headers,body:JSON.stringify({op,data})}),token?{...e,NEXUS_LOCAL_ADMIN:'false'}:e);return {status:r.status,body:await r.json()}};
 const state=async(e,token)=>(await handle(new Request(origin+'/api/state',{headers:token?{Cookie:'nexus_session='+token}:{}}),token?{...e,NEXUS_LOCAL_ADMIN:'false'}:e)).json();
 
-test('Mamoball ID: 6 characters, set once, then 24h-limited change requests approved by admins',async()=>{
+test('Mamoball ID: 6 characters, lowercase, set once, then 48h-limited change requests approved by admins',async()=>{
  const e=base(),t=await member(e),t2=await member(e,'other','333333333333333333');
  for(const bad of ['ABC12','ABC1234','AB-123','']) assert.equal((await call(e,'mamo.set',{mamo:bad},t)).status,400,bad);
  assert.equal((await call(e,'mamo.set',{mamo:'A1b2C3'},t)).status,200);
  assert.equal((await call(e,'mamo.set',{mamo:'ZZZ999'},t)).status,409,'cannot overwrite directly');
  assert.equal((await call(e,'mamo.set',{mamo:'a1B2c3'},t2)).status,409,'unique, case-insensitive');
- let me=(await state(e,t)).profile;assert.equal(me.mamo,'A1b2C3');assert.ok(Date.parse(me.nextIdChange)-Date.now()>ID_COOLDOWN-60000);
- const early=await call(e,'mamo.request',{mamo:'NEW001'},t);assert.equal(early.status,429);assert.match(early.body.error,/24h|23h/);
+ let me=(await state(e,t)).profile;assert.equal(me.mamo,'a1b2c3');assert.ok(Date.parse(me.nextIdChange)-Date.now()>ID_COOLDOWN-60000);
+ const early=await call(e,'mamo.request',{mamo:'NEW001'},t);assert.equal(early.status,429);assert.match(early.body.error,/48h|47h/);
  e.DB.sqlite.prepare("UPDATE users SET mamo_set_at=? WHERE id='member'").run(new Date(Date.now()-ID_COOLDOWN-1000).toISOString());
  assert.equal((await call(e,'mamo.request',{mamo:'A1B2C3'},t)).status,400,'same ID');
  assert.equal((await call(e,'mamo.request',{mamo:'NEW001'},t)).status,200);
  assert.equal((await call(e,'mamo.request',{mamo:'NEW002'},t)).status,409,'one pending at a time');
- me=(await state(e,t)).profile;assert.equal(me.idRequests[0].status,'Pendente');assert.equal(me.idRequests[0].new_mamo,'NEW001');
+ me=(await state(e,t)).profile;assert.equal(me.idRequests[0].status,'Pendente');assert.equal(me.idRequests[0].new_mamo,'new001');
  assert.equal((await call(e,'mamo.review',{id:1,status:'Aprovado'},t)).status,403,'players cannot approve');
  const admin=await state(e);assert.equal(admin.idRequests.length,1);
  assert.equal((await call(e,'mamo.review',{id:1,status:'Aprovado'})).status,200);
- assert.equal((await state(e,t)).profile.mamo,'NEW001');
+ assert.equal((await state(e,t)).profile.mamo,'new001');
  assert.equal((await call(e,'mamo.review',{id:1,status:'Recusado'})).status,400,'already handled');
  e.DB.sqlite.prepare("UPDATE id_requests SET status='Recusado'").run();
- assert.equal((await call(e,'mamo.request',{mamo:'NEW003'},t)).status,429,'24h after the last request too');
+ assert.equal((await call(e,'mamo.request',{mamo:'NEW003'},t)).status,429,'48h after the last request too');
 });
 
 test('profile images: validated upload, public versioned URL, style choices, owner and admin removal',async()=>{
