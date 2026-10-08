@@ -11,7 +11,7 @@ const one=async(db,sql,...args)=>db.prepare(sql).bind(...args).first();
 const run=async(db,sql,...args)=>db.prepare(sql).bind(...args).run();
 // Mamoball IDs: exactly 6 letters/digits. First ID is set by the player; later changes go through an admin request, one per 24 hours.
 export const MAMO_ID=/^[A-Za-z0-9]{6}$/;
-export const ID_COOLDOWN=48*3600*1000;
+export const ID_COOLDOWN=24*3600*1000;
 export const NICK_COOLDOWN=48*3600*1000;
 export const FLAG_COOLDOWN=48*3600*1000;
 export const FLAG_CODE=/^[A-Z]{2}$/;
