@@ -61,7 +61,7 @@ test('team editing and competition-specific invitations enforce maximum roster a
  r=await call(e,'team.invite',{team:t1.id,competition:c1.id,player:p3});
  assert.equal(r.status,200,r.body.error);
  r=await call(e,'team.invite',{team:t1.id,competition:c1.id,player:p4});
- assert.equal(r.status,400,'active players plus pending invitations cannot exceed maximum');
+ assert.equal(r.status,409,'active players plus pending invitations cannot exceed maximum');
  const invite3=await e.DB.prepare("SELECT * FROM team_invites WHERE team_id=? AND competition_id=? AND player_id=?").bind(t1.id,c1.id,p3).first();
  r=await call(e,'team.invite.respond',{id:invite3.id,status:'Aceite'});
  assert.equal(r.status,200,r.body.error);
@@ -92,4 +92,13 @@ test('team roster minimum is checked before starting a competition',async()=>{
  await call(e,'team.invite.respond',{id:inv2.id,status:'Aceite'});
  r=await call(e,'competition.start',{id:c.id});
  assert.equal(r.status,200,r.body.error);
+});
+
+test('a player with no nation can set it even if stale cooldown metadata exists',async()=>{
+ const e=env();
+ await e.DB.prepare("UPDATE users SET ingame_flag='',flag_set_at=? WHERE id='local-admin'").bind(new Date(Date.now()+7*24*3600*1000).toISOString()).run();
+ const r=await call(e,'flag.request',{flag:'PT'});
+ assert.equal(r.status,200,r.body.error);
+ const u=await e.DB.prepare("SELECT ingame_flag FROM users WHERE id='local-admin'").first();
+ assert.equal(u.ingame_flag,'PT');
 });
