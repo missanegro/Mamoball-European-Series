@@ -14,7 +14,7 @@ test('local admin works only on loopback in development; forged hosting headers 
  assert.equal(localMode(new Request('https://league.example/api/state'),e),false);
 });
 test('local admin can create a team; cross-site writes denied',async()=>{
- const e=env();const options={method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Nexus-Request':'1'},body:JSON.stringify({op:'team.create',data:{name:'Test Team',tag:'TST',region:'Portugal',color:'#c2f970',logo:'data:image/png;base64,iVBORw0KGgoBAgM='}})};
+ const e=env();const options={method:'POST',headers:{Origin:origin,'Content-Type':'application/json','X-Nexus-Request':'1'},body:JSON.stringify({op:'team.create',data:{name:'Test Team',tag:'TST',region:'Portugal',color:'#c2f970',logo:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/lQAAAABJRU5ErkJggg=='}})};
  const r=await handle(req('/api/action',options),e);assert.equal(r.status,200,await r.text());
  assert.equal((await (await handle(req(),e)).json()).teams.length,1);
  assert.equal((await handle(req('/api/action',{...options,headers:{...options.headers,Origin:'https://evil.example'}}),e)).status,403);
