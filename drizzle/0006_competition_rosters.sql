@@ -14,6 +14,8 @@ CREATE INDEX player_teams_competition ON player_teams(competition_id,team_id);
 --> statement-breakpoint
 CREATE INDEX player_teams_player ON player_teams(player_id,competition_id);
 --> statement-breakpoint
+CREATE UNIQUE INDEX player_one_team_per_competition ON player_teams(player_id,competition_id) WHERE competition_id IS NOT NULL;
+--> statement-breakpoint
 UPDATE competitions SET min_players=1,max_players=10;
 --> statement-breakpoint
 INSERT OR IGNORE INTO player_teams (player_id,team_id,competition_id,created)
