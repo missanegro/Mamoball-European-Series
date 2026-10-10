@@ -9,7 +9,7 @@ const call=async(e,op,data)=>{const r=await handle(new Request(origin+'/api/acti
 const png='data:image/png;base64,'+Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,1,2,3]).toString('base64');
 async function addPlayer(e,id,nick,mamo){
  const r=await e.DB.prepare('INSERT INTO players (nick,mamo,team_id,position,created) VALUES (?,?,?,?,?)').bind(nick,mamo,null,'Avançado','2026').run();
- await e.DB.prepare('INSERT INTO users (id,discord_id,discord_name,nick,mamo,player_id,owner,created) VALUES (?,?,?,?,?,?,0,?)').bind('u-'+id,String(100000000000000000+id),nick,nick,mamo,r.meta.last_row_id,'2026').run();
+ await e.DB.prepare('INSERT INTO users (id,discord_id,discord_name,nick,mamo,player_id,owner,created) VALUES (?,?,?,?,?,?,0,?)').bind('u-'+id,('2'.repeat(17)+String(id)).slice(-18),nick,nick,mamo,r.meta.last_row_id,'2026').run();
  return r.meta.last_row_id;
 }
 async function competition(e,name,minPlayers=2,maxPlayers=3){
