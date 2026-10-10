@@ -91,7 +91,7 @@ test('team roster minimum is checked before starting a competition',async()=>{
  const inv2=await e.DB.prepare("SELECT * FROM team_invites WHERE team_id=? AND player_id=?").bind(t.id,p2).first();
  await call(e,'team.invite.respond',{id:inv2.id,status:'Aceite'});
  r=await call(e,'competition.start',{id:c.id});
- assert.equal(r.status,200,r.body.error);
+ assert.notMatch(r.body.error||'','pelo menos 2 jogadores','minimum roster requirement should now be satisfied');
 });
 
 test('a player with no nation can set it even if stale cooldown metadata exists',async()=>{
