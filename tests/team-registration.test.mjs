@@ -67,6 +67,9 @@ test('team editing and competition-specific invitations enforce maximum roster a
  assert.equal(r.status,200,r.body.error);
  r=await call(e,'team.invite',{team:t2.id,competition:c2.id,player:p1});
  assert.equal(r.status,200,r.body.error,'same player can be invited to a different team in another competition');
+ const invite2=await e.DB.prepare("SELECT * FROM team_invites WHERE team_id=? AND competition_id=? AND player_id=?").bind(t2.id,c2.id,p1).first();
+ r=await call(e,'team.invite.respond',{id:invite2.id,status:'Aceite'});
+ assert.equal(r.status,200,r.body.error);
  const rows=await e.DB.prepare('SELECT team_id,competition_id FROM player_teams WHERE player_id=? ORDER BY competition_id').bind(p1).all();
  assert.equal(rows.results.length,2);
  assert.deepEqual(rows.results.map(x=>x.team_id).sort((a,b)=>a-b),[t1.id,t2.id].sort((a,b)=>a-b));
@@ -91,7 +94,7 @@ test('team roster minimum is checked before starting a competition',async()=>{
  const inv2=await e.DB.prepare("SELECT * FROM team_invites WHERE team_id=? AND player_id=?").bind(t.id,p2).first();
  await call(e,'team.invite.respond',{id:inv2.id,status:'Aceite'});
  r=await call(e,'competition.start',{id:c.id});
- assert.notMatch(r.body.error||'','pelo menos 2 jogadores','minimum roster requirement should now be satisfied');
+ assert.equal((r.body.error||'').includes('pelo menos 2 jogadores'),false,'minimum roster requirement should now be satisfied');
 });
 
 test('a player with no nation can set it even if stale cooldown metadata exists',async()=>{
